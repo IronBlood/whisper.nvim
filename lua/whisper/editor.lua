@@ -11,7 +11,8 @@ local function build_lines(text, insert_newline)
 		return vim.split(text, "\n", { plain = true })
 	end
 
-	return { text:gsub("\n", " ") }
+	local single_line = text:gsub("\n", " ")
+	return { single_line }
 end
 
 ---@param text string|nil
