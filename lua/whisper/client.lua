@@ -40,7 +40,7 @@ end
 ---@param callback fun(text: string|nil, err: string|nil)
 function M.transcribe(endpoint, audiofile, callback)
 	local cmd = build_command(endpoint, audiofile)
-	vim.system(cmd, { text = true }, function(result)
+	vim.system(cmd, { text = true }, vim.schedule_wrap(function(result)
 		local stdout = result.stdout or ""
 		local stderr = result.stderr or ""
 
@@ -56,7 +56,7 @@ function M.transcribe(endpoint, audiofile, callback)
 		end
 
 		callback(text, nil)
-	end)
+	end))
 end
 
 return M

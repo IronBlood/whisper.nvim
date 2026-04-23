@@ -24,12 +24,13 @@ function M.insert_text(text, target, insert_newline, notify_fn)
 		return
 	end
 
-	local buf = target.buf
-	if not buf or not vim.api.nvim_buf_is_valid(buf) then
-		buf = vim.api.nvim_get_current_buf()
-	end
-
 	vim.schedule(function()
+		local buf = target.buf
+		if not buf then
+			notify_fn("Target buffer is missing", vim.log.levels.ERROR)
+			return
+		end
+
 		if not vim.api.nvim_buf_is_valid(buf) then
 			notify_fn("Target buffer is no longer valid", vim.log.levels.ERROR)
 			return
