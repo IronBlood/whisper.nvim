@@ -1,5 +1,7 @@
 local M = {}
 
+local target_ns = vim.api.nvim_create_namespace("whisper")
+
 local state = {
 	---@type WhisperStatus
 	status = "idle",
@@ -11,6 +13,8 @@ local state = {
 	target_buf = nil,
 	---@type integer|nil
 	target_win = nil,
+	---@type integer|nil
+	target_mark = nil,
 }
 
 ---@return WhisperStatus
@@ -36,8 +40,30 @@ end
 function M.set_recording(job, audiofile)
 	state.record_job = job
 	state.audiofile = audiofile
+end
+
+local function clear_target_mark()
+	local buf = state.target_buf
+	local mark = state.target_mark
+	if buf and mark and vim.api.nvim_buf_is_valid(buf) then
+		pcall(vim.api.nvim_buf_del_extmark, buf, target_ns, mark)
+	end
+
+	state.target_mark = nil
+end
+
+function M.capture_target()
+	local win = vim.api.nvim_get_current_win()
+	local buf = vim.api.nvim_get_current_buf()
+	local cursor = vim.api.nvim_win_get_cursor(win)
+
+	clear_target_mark()
+
 	state.target_buf = vim.api.nvim_get_current_buf()
 	state.target_win = vim.api.nvim_get_current_win()
+	state.target_mark = vim.api.nvim_buf_set_extmark(buf, target_ns, cursor[1] - 1, cursor[2], {
+		right_gravity = false,
+	})
 end
 
 ---@return integer|nil
@@ -63,7 +89,21 @@ function M.target()
 	return {
 		buf = state.target_buf,
 		win = state.target_win,
+		mark = state.target_mark,
+		ns = target_ns,
 	}
+end
+
+function M.clear_target()
+	clear_target_mark()
+	state.target_buf = nil
+	state.target_win = nil
+end
+
+function M.forget_target()
+	state.target_buf = nil
+	state.target_win = nil
+	state.target_mark = nil
 end
 
 return M

@@ -30,6 +30,7 @@ local function transcribe_file(audiofile)
 	client.transcribe(config.get().endpoint, audiofile, function(text, err)
 		if err then
 			cleanup_audiofile()
+			session.clear_target()
 			session.set_status("idle")
 			send_notification(err, vim.log.levels.ERROR)
 			return
@@ -38,6 +39,7 @@ local function transcribe_file(audiofile)
 		cleanup_audiofile()
 		session.set_status("idle")
 		editor.insert_text(text, session.target(), config.get().insert_newline, send_notification)
+		session.forget_target()
 		send_notification("Transcription inserted")
 	end)
 end
@@ -54,6 +56,7 @@ local function handle_recorder_exit(code)
 	session.set_status("idle")
 	send_notification("Recorder exited unexpectedly", vim.log.levels.ERROR)
 	cleanup_audiofile()
+	session.clear_target()
 end
 
 function M.status()
@@ -94,6 +97,7 @@ function M.stop()
 	local job = session.record_job()
 	local audiofile = session.audiofile()
 
+	session.capture_target()
 	session.clear_record_job()
 
 	if job then
