@@ -23,14 +23,15 @@ local function cleanup_audiofile()
 	session.clear_audiofile()
 end
 
-local function transcribe_file(audiofile)
+local function transcribe_file(audiofile, endpoint)
 	session.set_status("transcribing")
 	send_notification("Transcribing...")
 
-	client.transcribe(config.get().endpoint, audiofile, function(text, err)
+	client.transcribe(endpoint, audiofile, function(text, err)
 		if err then
 			cleanup_audiofile()
 			session.clear_target()
+			session.clear_endpoint()
 			session.set_status("idle")
 			send_notification(err, vim.log.levels.ERROR)
 			return
@@ -40,6 +41,7 @@ local function transcribe_file(audiofile)
 		session.set_status("idle")
 		editor.insert_text(text, session.target(), config.get().insert_newline, send_notification)
 		session.forget_target()
+		session.clear_endpoint()
 		send_notification("Transcription inserted")
 	end)
 end
@@ -57,6 +59,7 @@ local function handle_recorder_exit(code)
 	send_notification("Recorder exited unexpectedly", vim.log.levels.ERROR)
 	cleanup_audiofile()
 	session.clear_target()
+	session.clear_endpoint()
 end
 
 function M.status()
@@ -71,19 +74,21 @@ function M.is_busy()
 	return session.is_busy()
 end
 
-function M.start()
+---@param opts? WhisperEndpoint|WhisperActionOpts
+function M.start(opts)
 	if session.status() ~= "idle" then
 		send_notification("Already busy: " .. session.status(), vim.log.levels.WARN)
 		return
 	end
 
+	local endpoint = config.resolve_endpoint(opts)
 	local job, audiofile_or_err = recorder.start(handle_recorder_exit)
 	if not job then
-		send_notification(audiofile_or_err, vim.log.levels.ERROR)
+		send_notification(audiofile_or_err or "unknown error", vim.log.levels.ERROR)
 		return
 	end
 
-	session.set_recording(job, audiofile_or_err)
+	session.set_recording(job, audiofile_or_err, endpoint)
 	session.set_status("recording")
 	send_notification("Recording...")
 end
@@ -96,6 +101,7 @@ function M.stop()
 
 	local job = session.record_job()
 	local audiofile = session.audiofile()
+	local endpoint = session.endpoint()
 
 	session.capture_target()
 	session.clear_record_job()
@@ -106,7 +112,18 @@ function M.stop()
 
 	if not audiofile then
 		session.set_status("idle")
+		session.clear_target()
+		session.clear_endpoint()
 		send_notification("Audio file was not created", vim.log.levels.ERROR)
+		return
+	end
+
+	if not endpoint then
+		session.set_status("idle")
+		session.clear_target()
+		session.clear_endpoint()
+		send_notification("Transcription endpoint is missing", vim.log.levels.ERROR)
+		cleanup_audiofile()
 		return
 	end
 
@@ -115,18 +132,21 @@ function M.stop()
 			session.set_status("idle")
 			send_notification(err or "Unknown" --[[ TODO Replace better message ]], vim.log.levels.ERROR)
 			cleanup_audiofile()
+			session.clear_target()
+			session.clear_endpoint()
 			return
 		end
 
-		transcribe_file(audiofile)
+		transcribe_file(audiofile, endpoint)
 	end, config.get().recorder.ready)
 end
 
-function M.toggle()
+---@param opts? WhisperEndpoint|WhisperActionOpts
+function M.toggle(opts)
 	if M.is_recording() then
 		M.stop()
 	elseif session.status() == "idle" then
-		M.start()
+		M.start(opts)
 	else
 		send_notification("Busy: " .. session.status(), vim.log.levels.WARN)
 	end

@@ -31,6 +31,7 @@ Default configuration:
 ```lua
 require("whisper").setup({
   endpoint = "http://127.0.0.1:8080/inference",
+  endpoints = {},
   insert_newline = false,
   notify = true,
   recorder = {
@@ -44,13 +45,26 @@ require("whisper").setup({
 
 Options:
 
-- `endpoint`: ASR server endpoint.
+- `endpoint`: default ASR server endpoint.
+- `endpoints`: named ASR endpoints for per-keymap selection.
 - `insert_newline`: when `true`, keep newline breaks from the transcription.
 - `notify`: enable `vim.notify` messages.
 - `recorder.ready.timeout_ms`: how long to wait for the recorded audio file to be finalized after stopping.
 - `recorder.ready.interval_ms`: how often to check whether the audio file is ready.
 
 The ASR service is expected to return JSON containing either `text` or `transcript`.
+
+Multiple endpoints can be configured like this:
+
+```lua
+require("whisper").setup({
+  endpoint = "http://127.0.0.1:8080/inference",
+  endpoints = {
+    small = "http://127.0.0.1:8080/inference",
+    large = "http://127.0.0.1:8081/inference",
+  },
+})
+```
 
 ## Usage
 
@@ -64,6 +78,28 @@ vim.keymap.set("n", "<leader>wj", whisper.start, { desc = "Whisper start recordi
 vim.keymap.set("n", "<leader>wk", whisper.stop, { desc = "Whisper stop recording" })
 ```
 
+Per-endpoint keymaps:
+
+```lua
+local whisper = require("whisper")
+
+vim.keymap.set("i", "<F8>", function()
+  whisper.toggle("small")
+end, { desc = "Whisper toggle recording with small model" })
+
+vim.keymap.set("i", "<F9>", function()
+  whisper.toggle("large")
+end, { desc = "Whisper toggle recording with large model" })
+```
+
+You can also pass an endpoint URL directly:
+
+```lua
+vim.keymap.set("i", "<F8>", function()
+  require("whisper").toggle("http://127.0.0.1:8080/inference")
+end, { desc = "Whisper toggle recording" })
+```
+
 Workflow:
 
 1. Call `setup()` during startup.
@@ -75,9 +111,9 @@ Workflow:
 Available functions:
 
 - `require("whisper").setup(opts)`
-- `require("whisper").start()`
+- `require("whisper").start(endpoint_or_opts)`
 - `require("whisper").stop()`
-- `require("whisper").toggle()`
+- `require("whisper").toggle(endpoint_or_opts)`
 - `require("whisper").status()`
 - `require("whisper").is_recording()`
 - `require("whisper").is_busy()`

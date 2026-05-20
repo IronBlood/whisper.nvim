@@ -15,6 +15,8 @@ local state = {
 	target_win = nil,
 	---@type integer|nil
 	target_mark = nil,
+	---@type string|nil
+	endpoint = nil,
 }
 
 ---@return WhisperStatus
@@ -37,9 +39,11 @@ end
 
 ---@param job integer|nil
 ---@param audiofile string|nil
-function M.set_recording(job, audiofile)
+---@param endpoint string
+function M.set_recording(job, audiofile, endpoint)
 	state.record_job = job
 	state.audiofile = audiofile
+	state.endpoint = endpoint
 end
 
 local function clear_target_mark()
@@ -82,6 +86,15 @@ end
 
 function M.clear_audiofile()
 	state.audiofile = nil
+end
+
+---@return string|nil
+function M.endpoint()
+	return state.endpoint
+end
+
+function M.clear_endpoint()
+	state.endpoint = nil
 end
 
 ---@return {buf: integer|nil, win: integer|nil, mark: integer|nil, ns: integer}

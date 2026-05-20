@@ -11,6 +11,7 @@
 
 ---@class WhisperConfig
 ---@field endpoint string
+---@field endpoints table<string, string>
 ---@field insert_newline boolean
 ---@field notify boolean
 ---@field recorder WhisperRecorderConfig
@@ -24,6 +25,12 @@
 
 ---@class WhisperConfigOpts
 ---@field endpoint? string
+---@field endpoints? table<string, string>
 ---@field insert_newline? boolean
 ---@field notify? boolean
 ---@field recorder? WhisperRecorderConfigOpts
+
+---@alias WhisperEndpoint string
+
+---@class WhisperActionOpts
+---@field endpoint? string
