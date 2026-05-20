@@ -84,7 +84,7 @@ function M.clear_audiofile()
 	state.audiofile = nil
 end
 
----@return {buf: integer|nil, win: integer|nil}
+---@return {buf: integer|nil, win: integer|nil, mark: integer|nil, ns: integer}
 function M.target()
 	return {
 		buf = state.target_buf,
